@@ -21,6 +21,7 @@ app/public/.htaccess
 
 # Logs
 logs/
+app/public/wp-content/uploads/wc-logs/
 
 # Local by Flywheel
 conf/
