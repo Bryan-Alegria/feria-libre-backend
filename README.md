@@ -1,91 +1,175 @@
 # Feria Libre Digital Marketplace
 
-Plataforma de comercio electrónico mobile-first para emprendedores de Puente Alto, Chile.
+## Objetivo del Proyecto
 
-## Objetivo
-
-Conectar vendedores locales con compradores de la comuna a través de un marketplace accesible, con pagos directos vía Flow y sin comisiones por venta.
+MVP académico de marketplace local para Puente Alto, Chile, conectando vendedores y compradores a través de una interfaz moderna y responsive. El proyecto busca digitalizar la experiencia de feria libre tradicional, facilitando el comercio local con tecnología accesible.
 
 ## Stack Tecnológico
 
 - **CMS:** WordPress 6.x
 - **E-commerce:** WooCommerce
 - **Multi-vendor:** Dokan Lite
-- **Pasarela de pago:** Flow (Chile)
-- **Hosting:** Local by Flywheel (desarrollo)
+- **Autenticación:** JWT Authentication for WP REST API
+- **Pasarela de Pago:** Flow (Chile)
+- **Entorno de Desarrollo:** Local by Flywheel
 
-## Design System
+## Sistema de Diseño
 
-Implementación basada en **Shopify Design Tokens** (`docs/DESIGN-shopify.md`):
+Implementación basada en **Shopify Design System** (tokens definidos en `docs/DESIGN-shopify.md`):
 
-- Tipografía: Inter (400-600)
-- Paleta: Negro (#000000), Blanco (#FFFFFF), Aloe (#c1fbd4), Pistachio (#d4f9e0)
-- Componentes: Cards con shadow Level 3, botones pill, spacing tokens
-- Mobile-first: Max-width 430px, touch targets optimizados
+- **Tipografía:** Inter (400-600 weight)
+- **Paleta de colores:**
+  - Canvas cream (#fbfbf5)
+  - Primary black (#000000)
+  - Accent aloe (#c1fbd4)
+  - Accent pistachio (#d4f9e0)
+- **Componentes:** Botones pill, cards con shadow Level 3, spacing tokens consistentes
+- **Mobile-first:** Diseño optimizado para dispositivos móviles con experiencia app-like
 
-## Hitos Completados
+## Características Clave
 
-### Hito 1: Setup Inicial
-- Instalación de WordPress, WooCommerce y Dokan Lite
-- Configuración de entorno de desarrollo
+### 1. Arquitectura Web Híbrida Responsive
+- **Mobile (<1024px):** UI tipo aplicación con bottom navigation
+- **Desktop (≥1024px):** Navegación tradicional con header completo
+- Transiciones suaves entre breakpoints
+- Grid responsive de productos (1-4 columnas según viewport)
 
-### Hito 2: App Shell
-- `header.php` - Status bar y navegación superior
-- `footer.php` - Bottom navigation
-- `style.css` - Cabecera del tema
-- `functions.php` - Enqueue de assets
+### 2. Dashboard de Vendedor (Dokan)
+- Estadísticas en tiempo real (ventas, productos, pedidos)
+- Gestión de inventario
+- Validación de vendedores con `dokan_is_user_seller()`
+- Interfaz optimizada para móviles
 
-### Hito 3: Home Page Dinámica
-- `front-page.php` - Grid de productos con `wc_get_products()`
-- Listado de categorías con `get_terms()`
-- Hero section y barra de búsqueda
+### 3. Integración de Pasarela de Pago (Flow)
+- Checkout personalizado con resumen de pedido
+- Procesamiento seguro de órdenes WooCommerce
+- Redirección a Flow para pago
+- Validación de nonce en todos los formularios
 
-### Hito 4: Dashboard de Vendedor
-- `page-perfil.php` - Estadísticas del vendedor
-- Integración con `dokan_get_seller_stats()`
-- Lista de productos del vendedor
-- Verificación de permisos con `dokan_is_user_seller()`
-
-### Hito 5: Checkout con Flow
-- `page-checkout.php` - Resumen de pedido
-- Procesamiento de orden con `wc_create_order()`
-- Redirección a Flow para pago seguro
-- Validación de nonce y seguridad
+### 4. Seed Data Automatizado
+- Script `scripts/seed-data.php` para poblado rápido
+- 3 vendedores de prueba (Puente Alto)
+- 10 productos de ejemplo con imágenes placeholder
+- 5 categorías predefinidas
+- Idempotente (no crea duplicados)
 
 ## Estructura del Tema
 
 ```
-app/public/wp-content/themes/feria-libre-theme/
+feria-libre-theme/
 ├── style.css              # Cabecera del tema
-├── functions.php          # Setup y handlers
-├── header.php             # App shell superior
-├── footer.php             # Bottom navigation
-├── front-page.php         # Home dinámico
+├── functions.php          # Setup, enqueue, JWT helpers, checkout handler
+├── header.php             # Navegación dual (desktop/mobile)
+├── footer.php             # Footer dual (desktop/mobile)
+├── front-page.php         # Home dinámico con productos WooCommerce
 ├── index.php              # Template fallback
-├── page-perfil.php        # Dashboard vendedor
-├── page-checkout.php      # Checkout Flow
-└── assets/
-    ├── css/
-    │   └── feria-libre.css  # Design system completo
-    └── js/
-        └── feria-libre.js   # Interacciones
+├── page-perfil.php        # Dashboard de vendedor
+├── page-checkout.php      # Checkout con integración Flow
+├── assets/
+│   ├── css/
+│   │   └── feria-libre.css  # Design system completo (responsive)
+│   └── js/
+│       └── feria-libre.js   # Interacciones (chips, navegación)
+└── scripts/
+    └── seed-data.php      # Script de seed data
 ```
 
-## Instalación
+## Instalación y Configuración
 
-1. Clonar el repositorio
-2. Importar la base de datos de Local by Flywheel
-3. Activar el tema "Feria Libre" en WordPress
-4. Configurar WooCommerce y Dokan Lite
-5. Configurar Flow con API keys (producción)
+### Requisitos Previos
+- WordPress 6.x
+- WooCommerce (activo)
+- Dokan Lite (activo)
+- JWT Authentication for WP REST API (activo)
+
+### Pasos de Instalación
+
+1. **Clonar el repositorio**
+   ```bash
+   git clone https://github.com/Bryan-Alegria/feria-libre-backend.git
+   ```
+
+2. **Activar el tema**
+   - Panel WordPress → Apariencia → Temas → Activar "Feria Libre"
+
+3. **Configurar WooCommerce**
+   - Configurar moneda (CLP - Peso Chileno)
+   - Configurar zonas de envío (Puente Alto)
+
+4. **Configurar Dokan**
+   - Habilitar registro de vendedores
+   - Configurar comisiones (0% para este MVP)
+
+5. **Ejecutar Seed Data (opcional)**
+   ```bash
+   cd app/public
+   wp eval-file wp-content/themes/feria-libre-theme/scripts/seed-data.php --allow-root
+   ```
+   
+   O via navegador (solo desarrollo):
+   ```
+   http://tusitio.local/wp-content/themes/feria-libre-theme/scripts/seed-data.php?seed_key=feria_libre_2024
+   ```
+
+6. **Configurar Flow (producción)**
+   - Obtener API keys de Flow
+   - Configurar en `functions.php` (handler `feria_libre_process_checkout`)
+
+## Endpoints REST API Personalizados
+
+### GET /wp-json/feria-libre/v1/user
+Retorna datos del usuario autenticado.
+
+**Requiere:** Autenticación JWT
+
+**Respuesta:**
+```json
+{
+  "id": 1,
+  "username": "vendor_maria",
+  "email": "maria@example.com",
+  "display_name": "María González",
+  "is_seller": true
+}
+```
+
+### GET /wp-json/feria-libre/v1/seller/stats
+Retorna estadísticas del vendedor (solo vendedores Dokan).
+
+**Requiere:** Autenticación JWT + rol de vendedor
+
+**Respuesta:**
+```json
+{
+  "balance": "150000",
+  "earnings": "500000",
+  "products": 10,
+  "orders": 25
+}
+```
 
 ## Seguridad
 
-- Validación de nonce en todos los formularios
-- Escapado de output con `esc_html()` y `esc_attr()`
-- Verificación de permisos en áreas de vendedor
-- Sanitización de inputs con `sanitize_text_field()`
+- ✅ Validación de nonce en todos los formularios
+- ✅ Escapado de output con `esc_html()`, `esc_attr()`, `esc_url()`
+- ✅ Verificación de permisos en áreas de vendedor
+- ✅ Sanitización de inputs con `sanitize_text_field()`
+- ✅ JWT para autenticación de API
+- ✅ Protección de script de seed data
+
+## Hitos Completados
+
+1. **Hito 1:** Setup inicial (WordPress, WooCommerce, Dokan)
+2. **Hito 2:** App Shell (header, footer, estilos base)
+3. **Hito 3:** Home page dinámica con productos WooCommerce
+4. **Hito 4:** Dashboard de vendedor con integración Dokan
+5. **Hito 5:** Checkout con integración Flow
+6. **Hito 6:** Seed data y finalización
 
 ## Licencia
 
 GPL v2 o posterior
+
+## Equipo
+
+Proyecto académico - Ingeniería en Informática, INACAP 2024
