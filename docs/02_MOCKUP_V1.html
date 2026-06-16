@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feria Libre Digital — Prototipo Interactivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  /* ── TOKENS ─────────────────────────────────────────── */
+  :root {
+    --red:       #D32F2F;
+    --red-light: #FFEBEE;
+    --green:     #2E7D32;
+    --green-mid: #4CAF50;
+    --green-light:#E8F5E9;
+    --sand:      #F5F0E8;
+    --ink:       #1A1A1A;
+    --ink-mid:   #4A4A4A;
+    --ink-soft:  #8A8A8A;
+    --white:     #FFFFFF;
+    --border:    #E5E1D8;
+    --shadow:    0 2px 12px rgba(0,0,0,.08);
+    --radius:    16px;
+    --radius-sm: 10px;
+  }
+
+  /* ── RESET ───────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #EDEBE6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 48px;
+    gap: 32px;
+    min-height: 100vh;
+  }
+  h1, h2, h3 { font-family: 'Sora', sans-serif; }
+
+  /* ── PROTOTYPE CONTROLS ──────────────────────────────── */
+  .controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 400px;
+  }
+  .ctrl-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+    border: 1px solid var(--ink-soft);
+    background: var(--white);
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .ctrl-btn:hover { background: var(--sand); }
+
+  /* ── PHONE SHELL ─────────────────────────────────────── */
+  .phone {
+    width: 390px;
+    height: 800px; /* Fixed height for prototype app feel */
+    max-width: 100%;
+    background: var(--white);
+    border-radius: 40px;
+    box-shadow: 0 8px 40px rgba(0,0,0,.18);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* status bar */
+  .status-bar {
+    background: var(--ink);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 10px 24px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    letter-spacing: .02em;
+    flex-shrink: 0;
+  }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons span { font-size: 13px; }
+
+  /* ── APP PAGES (For Tab Switching) ───────────────────── */
+  .app-page {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+  .app-page.active {
+    display: flex;
+  }
+
+  /* app header */
+  .app-header {
+    background: var(--white);
+    padding: 14px 20px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .logo { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 700; color: var(--ink); }
+  .logo span { color: var(--red); }
+  .header-icon {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--sand);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .notif-badge { position: relative; }
+  .notif-badge::after {
+    content: ''; position: absolute; top: 1px; right: 1px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--red); border: 2px solid white;
+  }
+
+  /* scrollable content area */
+  .screen-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 20px 20px; /* Reduced bottom padding since nav is fixed */
+    background: var(--sand);
+  }
+
+  /* bottom nav */
+  .bottom-nav {
+    background: var(--white);
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 10px 0 14px;
+    flex-shrink: 0;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: color .15s;
+  }
+  .nav-item.active { color: var(--red); }
+  .nav-icon { font-size: 20px; line-height: 1; }
+
+  /* ── COMMON COMPONENTS ───────────────────────────────── */
+  .card {
+    background: var(--white); border-radius: var(--radius);
+    padding: 16px; box-shadow: var(--shadow); margin-bottom: 14px;
+  }
+  .card-title { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+  .card-sub { font-size: 12px; color: var(--ink-soft); margin-bottom: 12px; line-height: 1.4; }
+
+  .search-bar {
+    background: var(--white); border-radius: var(--radius); padding: 11px 14px;
+    display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow); margin-bottom: 16px; border: 1.5px solid transparent;
+  }
+  .search-bar:focus-within { border-color: var(--red); }
+  .search-bar input { border: none; outline: none; flex: 1; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--ink); background: transparent; }
+  .search-bar .search-ico { font-size: 16px; color: var(--ink-soft); }
+
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex-shrink: 0; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    background: var(--white); color: var(--ink-mid); border: 1.5px solid var(--border); cursor: pointer; transition: all .15s;
+  }
+  .chip.active { background: var(--red); color: var(--white); border-color: var(--red); }
+
+  .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .product-card { background: var(--white); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); cursor: pointer; }
+  .product-img { height: 100px; background: linear-gradient(135deg, var(--sand) 0%, #E8E2D6 100%); display: flex; align-items: center; justify-content: center; font-size: 34px; position: relative; }
+  .product-badge { position: absolute; top: 8px; left: 8px; background: var(--green); color: white; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 6px; letter-spacing: .04em; }
+  .product-info { padding: 10px; }
+  .product-name { font-size: 12px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+  .product-seller { font-size: 10px; color: var(--ink-soft); margin-bottom: 6px; }
+  .product-price { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; color: var(--red); }
+  .product-stars { font-size: 10px; color: #F59E0B; }
+
+  .btn {
+    display: block; width: 100%; padding: 14px; border-radius: var(--radius-sm); border: none;
+    font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; transition: opacity .15s;
+  }
+  .btn:active { opacity: .85; }
+  .btn-primary { background: var(--red); color: var(--white); }
+  .btn-secondary { background: var(--sand); color: var(--ink); border: 1.5px solid var(--border); }
+  .btn-green { background: var(--green); color: var(--white); }
+  .btn-sm { padding: 9px 16px; width: auto; display: inline-block; font-size: 12px; }
+
+  .section-title { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+  .section-title a { font-size: 12px; font-weight: 500; color: var(--red); text-decoration: none; }
+
+  /* ── OTHER COMPONENTS (Copied from original) ─────────── */
+  .semaphore-wrap { background: var(--white); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); margin-bottom: 14px; }
+  .semaphore-title { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+  .semaphore-sub { font-size: 12px; color: var(--ink-soft); margin-bottom: 16px; line-height: 1.4; }
+  .semaphore-steps { display: flex; flex-direction: column; gap: 12px; }
+  .semaphore-step { display: flex; align-items: flex-start; gap: 12px; }
+  .sem-dot { width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; transition: all .3s; }
+  .sem-dot.done  { background: var(--green); color: white; }
+  .sem-dot.active{ background: var(--red); color: white; box-shadow: 0 0 0 4px var(--red-light); }
+  .sem-dot.pending{ background: var(--border); color: var(--ink-soft); }
+  .sem-dot-label { flex: 1; }
+  .sem-dot-label strong { display: block; font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+  .sem-dot-label span { font-size: 11px; color: var(--ink-soft); }
+  .sem-connector { width: 2px; height: 10px; background: var(--border); margin-left: 15px; }
+  .sem-connector.done { background: var(--green-mid); }
+  .progress-wrap { margin-top: 16px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-soft); margin-bottom: 6px; }
+  .progress-bar-bg { background: var(--border); border-radius: 8px; height: 6px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--green), var(--green-mid)); border-radius: 8px; transition: width .4s; }
+
+  .detail-img { width: 100%; height: 180px; background: linear-gradient(135deg, var(--sand) 0%, #E0D8CC 100%); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 60px; margin-bottom: 14px; position: relative; }
+  .seller-strip { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--white); border-radius: var(--radius-sm); margin-bottom: 14px; box-shadow: var(--shadow); }
+  .seller-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--red-light); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .seller-info strong { display: block; font-size: 13px; color: var(--ink); }
+  .seller-info span { font-size: 11px; color: var(--ink-soft); }
+  .verified-badge { margin-left: auto; background: var(--green-light); color: var(--green); font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 6px; display: flex; align-items: center; gap: 3px; }
+  .price-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
+  .big-price { font-family: 'Sora', sans-serif; font-size: 26px; font-weight: 700; color: var(--red); }
+  .stock-pill { background: var(--green-light); color: var(--green); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; }
+
+  .cart-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 10px; }
+  .cart-thumb { width: 50px; height: 50px; border-radius: 10px; background: var(--sand); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+  .cart-info { flex: 1; }
+  .cart-info strong { font-size: 13px; color: var(--ink); display: block; margin-bottom: 2px; }
+  .cart-info span { font-size: 11px; color: var(--ink-soft); }
+  .qty-ctrl { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .qty-btn { width: 24px; height: 24px; border-radius: 6px; background: var(--sand); border: 1px solid var(--border); font-size: 14px; font-weight: 700; color: var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .qty-num { font-size: 13px; font-weight: 600; }
+  .cart-price { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; color: var(--red); align-self: flex-start; margin-top: 2px; }
+  .summary-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-mid); padding: 6px 0; border-bottom: 1px dashed var(--border); }
+  .summary-row.total { border-bottom: none; font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700; color: var(--ink); padding-top: 10px; }
+  .summary-row.total span { color: var(--red); }
+
+  .payment-logo { width: 80px; height: 32px; background: #005EB8; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 13px; letter-spacing: .04em; margin-bottom: 6px; }
+  .payment-note { font-size: 11px; color: var(--ink-soft); line-height: 1.5; margin-bottom: 14px; }
+  .direct-badge { display: flex; align-items: center; gap: 8px; background: var(--green-light); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 14px; }
+  .direct-badge .ico { font-size: 18px; }
+  .direct-badge p { font-size: 12px; color: var(--green); font-weight: 600; line-height: 1.3; }
+  .direct-badge p span { font-weight: 400; color: var(--ink-mid); }
+
+  .success-circle { width: 72px; height: 72px; border-radius: 50%; background: var(--green-light); display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 14px; }
+  .contact-options { display: flex; gap: 10px; margin-bottom: 14px; }
+  .contact-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 8px; background: var(--white); border-radius: var(--radius-sm); box-shadow: var(--shadow); border: 1.5px solid var(--border); cursor: pointer; font-size: 11px; font-weight: 600; color: var(--ink-mid); }
+  .contact-btn .ico { font-size: 22px; }
+  .contact-btn.primary-contact { border-color: var(--green); color: var(--green); background: var(--green-light); }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .stat-card { background: var(--white); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow); text-align: center; }
+  .stat-ico { font-size: 22px; margin-bottom: 4px; }
+  .stat-val { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+  .stat-lbl { font-size: 10px; color: var(--ink-soft); font-weight: 500; letter-spacing: .04em; }
+  .stat-card.highlight .stat-val { color: var(--red); }
+  .order-row { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--white); border-radius: var(--radius-sm); box-shadow: var(--shadow); margin-bottom: 8px; }
+  .order-ico { font-size: 22px; width: 40px; text-align: center; }
+  .order-info { flex: 1; }
+  .order-info strong { font-size: 13px; color: var(--ink); display: block; }
+  .order-info span { font-size: 11px; color: var(--ink-soft); }
+  .order-status { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+  .status-new { background: var(--red-light); color: var(--red); }
+  .status-done { background: var(--green-light); color: var(--green); }
+  .status-pending { background: #FFF8E1; color: #F59E0B; }
+
+  .stars-row { display: flex; gap: 8px; justify-content: center; margin: 16px 0; }
+  .star-btn { font-size: 32px; cursor: pointer; transition: transform .15s; filter: grayscale(1); }
+  .star-btn.lit { filter: none; transform: scale(1.15); }
+  textarea.review-input { width: 100%; border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 12px; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--ink); resize: none; outline: none; background: var(--sand); margin-bottom: 14px; }
+  textarea.review-input:focus { border-color: var(--red); }
+
+  .divider { height: 1px; background: var(--border); margin: 14px 0; }
+  .tag { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; background: var(--sand); color: var(--ink-mid); }
+  .row-between { display: flex; justify-content: space-between; align-items: center; }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <button class="ctrl-btn" onclick="navTo('a1')">Comprador: Inicio</button>
+  <button class="ctrl-btn" onclick="navTo('a3')">Comprador: Carrito</button>
+  <button class="ctrl-btn" onclick="navTo('b3')">Vendedor: Panel</button>
+  <button class="ctrl-btn" onclick="navTo('b1')">Vendedor: SII</button>
+</div>
+
+<div class="phone">
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="status-icons"><span>📶</span><span>🔋</span></div>
+  </div>
+
+  <div id="page-a1" class="app-page active">
+    <div class="app-header">
+      <div class="logo">Feria<span>.</span>Libre</div>
+      <div style="display:flex;gap:8px">
+        <div class="header-icon notif-badge">🔔</div>
+        <div class="header-icon" onclick="navTo('a3')">🛒</div>
+      </div>
+    </div>
+    <div class="screen-body">
+      <div class="card" style="background:linear-gradient(120deg,#D32F2F,#B71C1C);color:white;margin-bottom:14px">
+        <div style="font-size:11px;letter-spacing:.08em;opacity:.8;margin-bottom:4px">MARCHA BLANCA · GRATUITO</div>
+        <div style="font-family:'Sora',sans-serif;font-size:17px;font-weight:700;margin-bottom:4px">Tu feria, en tu celular</div>
+        <div style="font-size:12px;opacity:.85">Vendedores verificados de Puente Alto</div>
+      </div>
+
+      <div class="search-bar">
+        <span class="search-ico">🔍</span>
+        <input type="text" placeholder="Busca empanadas, ropa, artesanía…">
+      </div>
+
+      <div class="chips">
+        <div class="chip active">Todos</div>
+        <div class="chip">🍱 Comida</div>
+        <div class="chip">👗 Ropa</div>
+        <div class="chip">🪴 Plantas</div>
+        <div class="chip">🎨 Artesanía</div>
+      </div>
+
+      <div class="section-title">Cerca de ti <a href="#">Ver más →</a></div>
+      <div class="product-grid">
+        <div class="product-card" onclick="navTo('a2')">
+          <div class="product-img">🧆<span class="product-badge">✔ SII</span></div>
+          <div class="product-info">
+            <div class="product-name">Empanadas c/u</div>
+            <div class="product-seller">by Sabores del Sur</div>
+            <div class="product-stars">★★★★★</div>
+            <div class="product-price">$1.500</div>
+          </div>
+        </div>
+        <div class="product-card" onclick="navTo('a2')">
+          <div class="product-img">👗</div>
+          <div class="product-info">
+            <div class="product-name">Blusa bordada</div>
+            <div class="product-seller">by ModaPA</div>
+            <div class="product-stars">★★★★☆</div>
+            <div class="product-price">$12.000</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active" onclick="navTo('a1')"><span class="nav-icon">🏠</span>Inicio</div>
+      <div class="nav-item" onclick="navTo('a2')"><span class="nav-icon">🔍</span>Explorar</div>
+      <div class="nav-item" onclick="navTo('a3')"><span class="nav-icon">🛒</span>Carrito</div>
+      <div class="nav-item" onclick="navTo('b3')"><span class="nav-icon">👤</span>Perfil</div>
+    </div>
+  </div>
+
+  <div id="page-a2" class="app-page">
+    <div class="app-header">
+      <div style="font-size:20px;cursor:pointer" onclick="navTo('a1')">←</div>
+      <div class="logo">Feria<span>.</span>Libre</div>
+      <div class="header-icon">🤍</div>
+    </div>
+    <div class="screen-body">
+      <div class="detail-img">🧆
+        <div style="position:absolute;bottom:10px;right:10px;background:white;border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;color:#2E7D32;display:flex;gap:4px;align-items:center">✔ Vendedor SII</div>
+      </div>
+      <div class="row-between" style="margin-bottom:6px">
+        <div class="card-title" style="font-size:18px">Empanadas de pino</div>
+        <div class="tag">🍱 Comida</div>
+      </div>
+      <div class="price-row">
+        <div class="big-price">$1.500</div>
+        <div class="stock-pill">12 disponibles</div>
+      </div>
+      <p style="font-size:13px;color:#4A4A4A;line-height:1.6;margin-bottom:14px">
+        Empanadas caseras de pino con carne molida, huevo y aceitunas. Mínimo 6 unidades.
+      </p>
+      <div class="seller-strip">
+        <div class="seller-avatar">👩‍🍳</div>
+        <div class="seller-info">
+          <strong>Sabores del Sur</strong>
+          <span>✦✦✦✦✦ · 47 ventas</span>
+        </div>
+        <div class="verified-badge">✔ Verificado</div>
+      </div>
+      <button class="btn btn-primary" onclick="navTo('a3')">Agregar al carrito 🛒</button>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="navTo('a1')"><span class="nav-icon">🏠</span>Inicio</div>
+      <div class="nav-item active"><span class="nav-icon">🔍</span>Explorar</div>
+      <div class="nav-item" onclick="navTo('a3')"><span class="nav-icon">🛒</span>Carrito</div>
+      <div class="nav-item" onclick="navTo('b3')"><span class="nav-icon">👤</span>Perfil</div>
+    </div>
+  </div>
+
+  <div id="page-a3" class="app-page">
+    <div class="app-header">
+      <div style="font-size:20px;cursor:pointer" onclick="navTo('a2')">←</div>
+      <div class="logo">Feria<span>.</span>Libre</div>
+      <div style="font-size:12px;font-weight:600;color:#8A8A8A">3 productos</div>
+    </div>
+    <div class="screen-body">
+      <div class="section-title">Tu carrito</div>
+      <div class="cart-item">
+        <div class="cart-thumb">🧆</div>
+        <div class="cart-info">
+          <strong>Empanadas de pino</strong>
+          <span>Sabores del Sur</span>
+          <div class="qty-ctrl">
+            <div class="qty-btn">−</div><div class="qty-num">6</div><div class="qty-btn">+</div>
+          </div>
+        </div>
+        <div class="cart-price">$9.000</div>
+      </div>
+      <div class="card">
+        <div class="summary-row"><span>Subtotal</span><span>$9.000</span></div>
+        <div class="summary-row"><span>Comisión plataforma</span><span style="color:#2E7D32;font-weight:700">$0</span></div>
+        <div class="summary-row total"><span>Total a pagar</span><span>$9.000</span></div>
+      </div>
+      <div class="direct-badge">
+        <div class="ico">⚡</div>
+        <p>Pago directo al vendedor<br><span>Sin retención · Acreditación inmediata vía Flow</span></p>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div class="payment-logo">flow</div>
+        <div class="payment-note">Tu pago es procesado de forma segura por Flow. El dinero llega directamente al emprendedor.</div>
+      </div>
+      <button class="btn btn-primary" onclick="navTo('a4')">Pagar $9.000 vía Flow →</button>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="navTo('a1')"><span class="nav-icon">🏠</span>Inicio</div>
+      <div class="nav-item" onclick="navTo('a2')"><span class="nav-icon">🔍</span>Explorar</div>
+      <div class="nav-item active"><span class="nav-icon">🛒</span>Carrito</div>
+      <div class="nav-item" onclick="navTo('b3')"><span class="nav-icon">👤</span>Perfil</div>
+    </div>
+  </div>
+
+  <div id="page-a4" class="app-page">
+    <div class="app-header">
+      <div class="logo">Feria<span>.</span>Libre</div>
+      <div class="header-icon">📋</div>
+    </div>
+    <div class="screen-body">
+      <div class="success-circle">✅</div>
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="font-family:'Sora',sans-serif;font-size:18px;font-weight:700;color:#1A1A1A;margin-bottom:4px">¡Compra exitosa!</div>
+        <div style="font-size:13px;color:#4A4A4A">Pedido #2025-0147 · Pago confirmado</div>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title" style="margin-bottom:10px">Coordina tu entrega con</div>
+        <div class="seller-strip" style="box-shadow:none;padding:0;margin:0">
+          <div class="seller-avatar">👩‍🍳</div>
+          <div class="seller-info">
+            <strong>Sabores del Sur — Carmen López</strong>
+            <span>✦✦✦✦✦ · 47 ventas exitosas</span>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="contact-options">
+          <div class="contact-btn primary-contact"><div class="ico">💬</div>WhatsApp</div>
+          <div class="contact-btn"><div class="ico">📞</div>Llamar</div>
+        </div>
+      </div>
+      <button class="btn btn-secondary" style="margin-bottom:10px" onclick="navTo('c1')">Calificar a los vendedores ⭐</button>
+      <button class="btn btn-secondary" onclick="navTo('a1')">Volver al Inicio</button>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="navTo('a1')"><span class="nav-icon">🏠</span>Inicio</div>
+      <div class="nav-item" onclick="navTo('a2')"><span class="nav-icon">🔍</span>Explorar</div>
+      <div class="nav-item" onclick="navTo('a3')"><span class="nav-icon">🛒</span>Carrito</div>
+      <div class="nav-item active" onclick="navTo('b3')"><span class="nav-icon">👤</span>Perfil</div>
+    </div>
+  </div>
+
+  <div id="page-b1" class="app-page">
+    <div class="app-header">
+      <div style="font-size:20px;cursor:pointer" onclick="navTo('b3')">←</div>
+      <div class="logo">Feria<span>.</span>Libre</div>
+      <div style="font-size:12px;font-weight:600;color:#8A8A8A">Paso 2/4</div>
+    </div>
+    <div class="screen-body">
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="font-size:32px;margin-bottom:8px">🏪</div>
+        <div style="font-family:'Sora',sans-serif;font-size:18px;font-weight:700;color:#1A1A1A;margin-bottom:4px">Activa tu tienda</div>
+        <div style="font-size:12px;color:#8A8A8A;line-height:1.5">Verificamos que estés formalizado. Te ayudamos en cada paso.</div>
+      </div>
+      <div class="semaphore-wrap">
+        <div class="semaphore-title">🚦 Semáforo de formalización</div>
+        <div class="semaphore-sub">Completa estos pasos para obtener el sello ✔ SII y empezar a vender.</div>
+        <div class="semaphore-steps">
+          <div class="semaphore-step">
+            <div class="sem-dot done">✓</div>
+            <div class="sem-dot-label"><strong>Datos personales</strong><span>RUT, nombre, teléfono</span></div>
+          </div>
+          <div class="sem-connector done"></div>
+          <div class="semaphore-step">
+            <div class="sem-dot active">2</div>
+            <div class="sem-dot-label"><strong>Inicio de actividades SII</strong><span>Sube foto del comprobante.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="border:1.5px dashed #E5E1D8;box-shadow:none;text-align:center;margin-bottom:14px">
+        <div style="font-size:28px;margin-bottom:8px">📄</div>
+        <div style="font-size:13px;font-weight:600;color:#1A1A1A;margin-bottom:4px">Sube tu comprobante SII</div>
+        <button class="btn btn-secondary btn-sm" style="margin:0 auto;display:block">Subir archivo</button>
+      </div>
+      <button class="btn btn-primary" onclick="navTo('b2')">Continuar (Simular Publicar) →</button>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="navTo('b3')"><span class="nav-icon">🏠</span>Inicio</div>
+      <div class="nav-item active" onclick="navTo('b2')"><span class="nav-icon">📦</span>Mis productos</div>
+      <div class="nav-item" onclick="navTo('b1')"><span class="nav-icon">📋</span>Pedidos</div>
+      <div class="nav-item" onclick="navTo('b3')"><span class="nav-icon">👤</span>Perfil</div>
+    </div>
+  </div>
+
+  <div id="page-b2" class="app-page">
+    <div class="app-header">
+      <div style="font-size:20px;cursor:pointer" onclick="navTo('b3')">←</div>
+      <div class="logo" style="font-size:15px">Nuevo producto</div>
+      <div style="font-size:13px;font-weight:600;color:#D32F2F;cursor:pointer" onclick="navTo('b3')">Guardar</div>
+    </div>
+    <div class="screen-body">
+      <div style="background:#F5F0E8;border-radius:16px;height:130px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;margin-bottom:14px;border:2px dashed #E5E1D8;">
+        <span style="font-size:32px">📷</span>
+        <span style="font-size:12px;color:#8A8A8A;font-weight:500">Toca para agregar fotos</span>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+        <div style="padding:14px;border-bottom:1px solid #F5F0E8">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#8A8A8A;margin-bottom:4px">NOMBRE</div>
+          <input type="text" value="Empanadas de pino" style="width:100%;border:none;outline:none;font-size:15px;font-weight:600;color:#1A1A1A;font-family:'Inter',sans-serif;background:transparent">
+        </div>
+        <div style="padding:14px;display:flex;gap:0">
+          <div style="flex:1;border-right:1px solid #F5F0E8;padding-right:14px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#8A8A8A;margin-bottom:4px">PRECIO ($)</div>
+            <input type="number" value="1500" style="width:100%;border:none;outline:none;font-size:18px;font-weight:700;color:#D32F2F;font-family:'Sora',sans-serif;background:transparent">
+          </div>
+          <div style="flex:1;padding-left:14px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#8A8A8A;margin-bottom:4px">STOCK</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <div class="qty-btn">−</div>
+              <div style="font-size:18px;font-weight:700;color:#1A1A1A;font-family:'Sora',sans-serif">12</div>
+              <div class="qty-btn">+</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="navTo('b3')">Publicar producto</button>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="navTo('b3')"><span class="nav-icon">🏠</span>Inicio</div>
+      <div class="nav-item active" onclick="navTo('b2')"><span class="nav-icon">📦</span>Mis productos</div>
+      <div class="nav-item" onclick="navTo('b1')"><span class="nav-icon">📋</span>Pedidos</div>
+      <div class="nav-item" onclick="navTo('b3')"><span class="nav-icon">👤</span>Perfil</div>
+    </div>
+  </div>
+
+  <div id="page-b3" class="app-page">
+    <div class="app-header">
+      <div>
+        <div style="font-size:11px;color:#8A8A8A">Modo Vendedor</div>
+        <div class="logo">Carmen 👋</div>
+      </div>
+      <div class="header-icon notif-badge" onclick="navTo('a1')">🛒</div>
+    </div>
+    <div class="screen-body">
+      <div class="stat-grid">
+        <div class="stat-card highlight">
+          <div class="stat-ico">💰</div><div class="stat-val">$47.600</div><div class="stat-lbl">Este mes</div>
+        </div>
+        <div class="stat-card" onclick="navTo('b1')" style="cursor:pointer">
+          <div class="stat-ico">🚦</div><div class="stat-val">SII</div><div class="stat-lbl">Revisar Formalización</div>
+        </div>
+      </div>
+      <div class="section-title">Pedidos recientes</div>
+      <div class="order-row">
+        <div class="order-ico">🧆</div>
+        <div class="order-info">
+          <strong>6× Empanadas de pino</strong><span>Hace 5 min · Laura M.</span>
+        </div>
+        <div class="order-status status-new">NUEVO</div>
+      </div>
+      <div class="order-row">
+        <div class="order-ico">🕯️</div>
+        <div class="order-info">
+          <strong>3× Vela lavanda</strong><span>Ayer · Pedro V.</span>
+        </div>
+        <div class="order-status status-pending">EN CURSO</div>
+      </div>
+      <button class="btn btn-primary" onclick="navTo('b2')">Publicar Nuevo Producto</button>
+      <br>
+      <button class="btn btn-secondary" onclick="navTo('a1')">Volver a modo Comprador</button>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active" onclick="navTo('b3')"><span class="nav-icon">🏠</span>Inicio</div>
+      <div class="nav-item" onclick="navTo('b2')"><span class="nav-icon">📦</span>Mis productos</div>
+      <div class="nav-item" onclick="navTo('b1')"><span class="nav-icon">📋</span>Pedidos</div>
+      <div class="nav-item" onclick="navTo('b3')"><span class="nav-icon">👤</span>Perfil</div>
+    </div>
+  </div>
+
+  <div id="page-c1" class="app-page">
+    <div class="app-header">
+      <div style="font-size:20px;cursor:pointer" onclick="navTo('a4')">←</div>
+      <div class="logo" style="font-size:15px">Calificar compra</div>
+      <div style="font-size:12px;color:#8A8A8A">#2025-0147</div>
+    </div>
+    <div class="screen-body">
+      <div style="text-align:center;margin-bottom:4px">
+        <div class="seller-avatar" style="width:64px;height:64px;font-size:32px;margin:0 auto 10px">👩‍🍳</div>
+        <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#1A1A1A;margin-bottom:2px">Sabores del Sur</div>
+        <div style="font-size:12px;color:#8A8A8A">¿Cómo fue tu experiencia?</div>
+      </div>
+      <div class="stars-row">
+        <span class="star-btn lit">⭐</span><span class="star-btn lit">⭐</span><span class="star-btn lit">⭐</span>
+        <span class="star-btn lit">⭐</span><span class="star-btn lit">⭐</span>
+      </div>
+      <div style="text-align:center;font-family:'Sora',sans-serif;font-size:14px;font-weight:700;color:#2E7D32;margin-bottom:16px">¡Excelente! 5 estrellas</div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title" style="margin-bottom:10px">¿Qué fue lo mejor?</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <div class="chip active">Puntualidad</div>
+          <div class="chip active">Calidad del producto</div>
+          <div class="chip">Buena comunicación</div>
+        </div>
+      </div>
+      <textarea class="review-input" rows="3" placeholder="Escribe una reseña (opcional)…">Las empanadas quedaron excelentes, muy ricas y el tamaño ideal. ¡Volvería a comprar!</textarea>
+      <button class="btn btn-green" style="margin-bottom:10px" onclick="navTo('a1')">Enviar calificación ⭐</button>
+      <button class="btn btn-secondary" onclick="navTo('a1')">Omitir por ahora</button>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="navTo('a1')"><span class="nav-icon">🏠</span>Inicio</div>
+      <div class="nav-item" onclick="navTo('a2')"><span class="nav-icon">🔍</span>Explorar</div>
+      <div class="nav-item" onclick="navTo('a3')"><span class="nav-icon">🛒</span>Carrito</div>
+      <div class="nav-item active" onclick="navTo('b3')"><span class="nav-icon">👤</span>Perfil</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Simple navigation logic
+  function navTo(pageId) {
+    // Hide all pages
+    const pages = document.querySelectorAll('.app-page');
+    pages.forEach(page => {
+      page.classList.remove('active');
+    });
+    // Show requested page
+    const activePage = document.getElementById('page-' + pageId);
+    if(activePage) {
+      activePage.classList.add('active');
+    }
+  }
+</script>
+
+</body>
+</html>

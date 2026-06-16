@@ -1,0 +1,40 @@
+# WordPress core
+app/public/wp-admin/
+app/public/wp-includes/
+app/public/wp-*.php
+app/public/xmlrpc.php
+app/public/license.txt
+app/public/readme.html
+app/public/local-xdebuginfo.php
+
+# Vendor plugins (no commitear codigo de terceros)
+app/public/wp-content/plugins/woocommerce/
+app/public/wp-content/plugins/dokan-lite/
+app/public/wp-content/plugins/jwt-authentication-for-wp-rest-api/
+
+# Temas por defecto
+app/public/wp-content/themes/twentytwenty*/
+
+# Config y credenciales
+app/public/wp-config.php
+app/public/.htaccess
+
+# Logs
+logs/
+
+# Local by Flywheel
+conf/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Ponytail repo (demasiado grande)
+.opencode/ponytail-repo/
