@@ -105,3 +105,158 @@ function feria_libre_process_checkout() {
 }
 add_action( 'admin_post_feria_libre_process_checkout', 'feria_libre_process_checkout' );
 add_action( 'admin_post_nopriv_feria_libre_process_checkout', 'feria_libre_process_checkout' );
+
+/**
+ * JWT Authentication Helpers
+ */
+
+/**
+ * Obtener token JWT del header Authorization
+ */
+function feria_libre_get_jwt_token() {
+    $headers = getallheaders();
+    
+    if ( isset( $headers['Authorization'] ) ) {
+        $auth_header = $headers['Authorization'];
+        if ( preg_match( '/Bearer\s(\S+)/', $auth_header, $matches ) ) {
+            return $matches[1];
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Validar token JWT y obtener usuario
+ */
+function feria_libre_validate_jwt_token( $token ) {
+    if ( ! class_exists( 'JWT_Auth' ) ) {
+        return new WP_Error( 'jwt_not_available', 'JWT plugin no disponible' );
+    }
+    
+    $jwt_auth = JWT_Auth::get_instance();
+    $decoded = $jwt_auth->validate_token( $token );
+    
+    if ( is_wp_error( $decoded ) ) {
+        return $decoded;
+    }
+    
+    $user = get_user_by( 'id', $decoded->data->user->id );
+    
+    if ( ! $user ) {
+        return new WP_Error( 'user_not_found', 'Usuario no encontrado' );
+    }
+    
+    return $user;
+}
+
+/**
+ * Obtener usuario autenticado por JWT
+ */
+function feria_libre_get_jwt_user() {
+    $token = feria_libre_get_jwt_token();
+    
+    if ( ! $token ) {
+        return null;
+    }
+    
+    $user = feria_libre_validate_jwt_token( $token );
+    
+    if ( is_wp_error( $user ) ) {
+        return null;
+    }
+    
+    return $user;
+}
+
+/**
+ * Hacer request autenticado a REST API
+ */
+function feria_libre_api_request( $endpoint, $method = 'GET', $data = array() ) {
+    $token = feria_libre_get_jwt_token();
+    
+    $args = array(
+        'method'  => $method,
+        'headers' => array(
+            'Content-Type' => 'application/json',
+        ),
+    );
+    
+    if ( $token ) {
+        $args['headers']['Authorization'] = 'Bearer ' . $token;
+    }
+    
+    if ( ! empty( $data ) && in_array( $method, array( 'POST', 'PUT', 'PATCH' ) ) ) {
+        $args['body'] = wp_json_encode( $data );
+    }
+    
+    $url = rest_url( $endpoint );
+    $response = wp_remote_request( $url, $args );
+    
+    if ( is_wp_error( $response ) ) {
+        return $response;
+    }
+    
+    $body = wp_remote_retrieve_body( $response );
+    return json_decode( $body, true );
+}
+
+/**
+ * Exponer datos del usuario actual via REST API
+ */
+function feria_libre_register_rest_routes() {
+    register_rest_route( 'feria-libre/v1', '/user', array(
+        'methods'             => 'GET',
+        'callback'            => 'feria_libre_get_current_user_data',
+        'permission_callback' => function() {
+            return is_user_logged_in();
+        },
+    ) );
+    
+    register_rest_route( 'feria-libre/v1', '/seller/stats', array(
+        'methods'             => 'GET',
+        'callback'            => 'feria_libre_get_seller_stats',
+        'permission_callback' => function() {
+            if ( ! is_user_logged_in() ) {
+                return false;
+            }
+            if ( ! function_exists( 'dokan_is_user_seller' ) ) {
+                return false;
+            }
+            return dokan_is_user_seller( get_current_user_id() );
+        },
+    ) );
+}
+add_action( 'rest_api_init', 'feria_libre_register_rest_routes' );
+
+/**
+ * Obtener datos del usuario actual
+ */
+function feria_libre_get_current_user_data() {
+    $user = wp_get_current_user();
+    
+    $data = array(
+        'id'           => $user->ID,
+        'username'     => $user->user_login,
+        'email'        => $user->user_email,
+        'display_name' => $user->display_name,
+        'is_seller'    => function_exists( 'dokan_is_user_seller' ) ? dokan_is_user_seller( $user->ID ) : false,
+    );
+    
+    return rest_ensure_response( $data );
+}
+
+/**
+ * Obtener estadísticas del vendedor
+ */
+function feria_libre_get_seller_stats() {
+    $user_id = get_current_user_id();
+    
+    if ( ! function_exists( 'dokan_get_seller_stats' ) ) {
+        return new WP_Error( 'dokan_not_available', 'Dokan no disponible', array( 'status' => 500 ) );
+    }
+    
+    $stats = dokan_get_seller_stats( $user_id );
+    
+    return rest_ensure_response( $stats );
+}
