@@ -130,8 +130,8 @@ function fl_create_vendors() {
             ) );
             
             if ( ! is_wp_error( $user_id ) ) {
-                // Actualizar datos de tienda Dokan
-                dokan_update_store_info( $user_id, array(
+                // Actualizar datos de tienda Dokan via user meta
+                $store_info = array(
                     'store_name' => $vendor['store_name'],
                     'address' => array(
                         'street_1' => $vendor['address'],
@@ -142,7 +142,11 @@ function fl_create_vendors() {
                     ),
                     'phone' => $vendor['phone'],
                     'show_email' => 'no',
-                ) );
+                );
+                
+                update_user_meta( $user_id, 'dokan_profile_settings', $store_info );
+                update_user_meta( $user_id, 'dokan_store_name', $vendor['store_name'] );
+                update_user_meta( $user_id, 'dokan_enable_selling', 'yes' );
                 
                 echo "✓ Vendedor creado: {$vendor['store_name']} (ID: {$user_id})\n";
                 $created[ $vendor['username'] ] = $user_id;
